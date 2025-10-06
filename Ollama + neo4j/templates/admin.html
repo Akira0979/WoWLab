@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7fafc;
+            margin: 0;
+            padding: 0;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .admin-header h2 {
+            color: #2d3748;
+            margin: 0;
+        }
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+        .admin-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+        .admin-card h3 i {
+            color: #4299e1;
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+        .btn-outline {
+            border: 1px solid #718096;
+            background: transparent;
+            color: #718096;
+        }
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .upload-label {
+            display: block;
+            padding: 20px;
+            border: 2px dashed #4299e1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .upload-label:hover {
+            border-color: #2b6cb0;
+            background: #ebf8ff;
+        }
+        .upload-label i {
+            font-size: 24px;
+            color: #4299e1;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .hidden {
+            display: none;
+        }
+        .logout {
+            background: #e53e3e;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="admin-container">
+    <div class="admin-header">
+        <h2>Document Management Admin</h2>
+        <a href="{{ url_for('home') }}" class="btn btn-outline">Back to Home</a>
+    </div>
+    <div class="admin-grid">
+        <!-- Upload Documents Panel -->
+        <div class="admin-card">
+            <h3><i class="fas fa-upload"></i> Upload Documents</h3>
+            <div class="upload-section">
+                <!-- Folder Upload -->
+                <form id="folderUploadForm" action="{{ url_for('upload_folder') }}" method="post" enctype="multipart/form-data">
+                    <label for="folderInput" class="upload-label">
+                        <i class="fas fa-folder-plus"></i>
+                        <span>Upload Folder</span>
+                    </label>
+                    <input type="file" id="folderInput" name="folder" webkitdirectory directory multiple class="hidden">
+                </form>
+                <!-- Files Upload -->
+                <form id="filesUploadForm" action="{{ url_for('upload_folder') }}" method="post" enctype="multipart/form-data">
+                    <label for="filesInput" class="upload-label">
+                        <i class="fas fa-file-upload"></i>
+                        <span>Upload Files</span>
+                    </label>
+                    <input type="file" id="filesInput" name="files[]" multiple accept=".pdf,.txt" class="hidden">
+                </form>
+            </div>
+        </div>
+        <!-- Document Processing Panel -->
+        <div class="admin-card">
+            <h3><i class="fas fa-cogs"></i> Document Processing</h3>
+            <div class="button-group">
+                <a href="/ingest" class="btn btn-primary">Process Documents</a>
+                <a href="/view_metadata" class="btn btn-secondary">View Metadata</a>
+                <a href="/view_sitemap" class="btn btn-secondary">View Sitemap</a>
+            </div>
+        </div>
+        <!-- Graph Management Panel -->
+        <div class="admin-card">
+            <h3><i class="fas fa-project-diagram"></i> Graph Management</h3>
+            <div class="button-group">
+                <a href="/view_graph" class="btn btn-primary">Generate Graph</a>
+                <a href="/view_graph" class="btn btn-secondary">View Graph</a>
+            </div>
+        </div>
+        <!-- Logout Button -->
+        <div class="admin-card">
+            <h3><i class="fas fa-sign-out-alt"></i> Logout</h3>
+            <form action="/logout" method="get">
+                <button class="btn logout">Sign Out</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Folder Upload Handler
+    document.querySelector('.upload-label[for="folderInput"]').addEventListener('click', function() {
+        document.getElementById('folderInput').click();
+    });
+    // Files Upload Handler
+    document.querySelector('.upload-label[for="filesInput"]').addEventListener('click', function() {
+        document.getElementById('filesInput').click();
+    });
+});
+</script>
+</body>
+</html>

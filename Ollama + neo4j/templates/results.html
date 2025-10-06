@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ingestion Results</title>
+    <style>
+        body { font-family: Arial; padding: 40px; background: #f9f9f9; }
+        h2 { color: #444; }
+        pre { background: #eee; padding: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Ingestion Complete</h2>
+    <p><strong>Files Processed:</strong> {{ files_processed }}</p>
+    <p><strong>Sitemap File:</strong> {{ sitemap_file }}</p>
+    <p><strong>Metadata File:</strong> {{ metadata_file }}</p>
+    <pre>{{ metadata_preview }}</pre>
+    <a href="/">← Back to Dashboard</a>
+</body>
+</html>

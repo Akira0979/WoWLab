@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>RFP Chatbot</h1>
+        <div id="chatbox"></div>
+        <form id="chat-form" action="/chatbot" method="post">
+            <input type="text" name="message" placeholder="Ask something..." required>
+            <button class="btn">Send</button>
+        </form>
+        <a href="/">← Back to Dashboard</a>
+    </div>
+</body>
+</html>

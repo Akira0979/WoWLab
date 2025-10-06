@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RFP Knowledge Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7fafc;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 40px 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 40px;
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 18px 38px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            background: #4299e1;
+            color: white;
+            box-shadow: 0 2px 6px rgba(66,153,225,0.08);
+            transition: background 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn:hover {
+            background: #2b6cb0;
+            transform: translateY(-2px);
+        }
+        .btn i {
+            font-size: 1.3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-lightbulb"></i> RFP Knowledge Dashboard</h1>
+        <div class="buttons">
+            <form action="/admin" method="get">
+                <button class="btn"><i class="fas fa-user-shield"></i> Admin Panel</button>
+            </form>
+            <form action="/user" method="get">
+                <button class="btn"><i class="fas fa-user"></i> User Panel</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

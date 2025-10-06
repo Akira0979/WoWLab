@@ -1,0 +1,55 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    padding: 40px;
+    background: #fff;
+    margin-top: 50px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #ccc;
+    text-align: center;
+}
+
+h1 {
+    color: #333;
+}
+
+.buttons {
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    margin: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.btn:hover {
+    background: #0056b3;
+}
+
+.logout {
+    background: #dc3545;
+}
+
+.logout:hover {
+    background: #a71d2a;
+}
+
+input[type="text"], input[type="password"], input[type="file"] {
+    padding: 10px;
+    margin: 10px;
+    width: 60%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
