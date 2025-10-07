@@ -63,28 +63,11 @@
             justify-content: center;
             gap: 8px;
         }
-        .btn-primary {
-            background: #4299e1;
-            color: white;
-        }
-        .btn-secondary {
-            background: #718096;
-            color: white;
-        }
-        .btn-outline {
-            border: 1px solid #718096;
-            background: transparent;
-            color: #718096;
-        }
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        .upload-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        .btn-primary { background: #4299e1; color: white; }
+        .btn-secondary { background: #718096; color: white; }
+        .btn-outline { border: 1px solid #718096; background: transparent; color: #718096; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .upload-section { display: flex; flex-direction: column; gap: 20px; }
         .upload-label {
             display: block;
             padding: 20px;
@@ -95,23 +78,21 @@
             text-align: center;
             margin-bottom: 10px;
         }
-        .upload-label:hover {
-            border-color: #2b6cb0;
-            background: #ebf8ff;
-        }
+        .upload-label:hover { border-color: #2b6cb0; background: #ebf8ff; }
         .upload-label i {
             font-size: 24px;
             color: #4299e1;
             margin-bottom: 10px;
             display: block;
         }
-        .hidden {
-            display: none;
-        }
-        .logout {
-            background: #e53e3e;
-            color: white;
-        }
+        .hidden { display: none; }
+        .logout { background: #e53e3e; color: white; }
+        /* Alerts */
+        .alert { padding: 10px; margin-top: 10px; border-radius: 6px; }
+        .alert-success { background: #c6f6d5; color: #276749; }
+        .alert-danger { background: #fed7d7; color: #c53030; }
+        .alert-info { background: #bee3f8; color: #2c5282; }
+        .small-note { color: #718096; font-size: 0.9rem; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -120,46 +101,57 @@
         <h2>Document Management Admin</h2>
         <a href="{{ url_for('home') }}" class="btn btn-outline">Back to Home</a>
     </div>
+
     <div class="admin-grid">
         <!-- Upload Documents Panel -->
         <div class="admin-card">
             <h3><i class="fas fa-upload"></i> Upload Documents</h3>
             <div class="upload-section">
-                <!-- Folder Upload -->
-                <form id="folderUploadForm" action="{{ url_for('upload_folder') }}" method="post" enctype="multipart/form-data">
+                <!-- Single Folder Upload -->
+                <form id="folderUploadForm" action="/upload_folder" method="post" enctype="multipart/form-data">
                     <label for="folderInput" class="upload-label">
-                        <i class="fas fa-folder-plus"></i>
-                        <span>Upload Folder</span>
+                        <i class="fas fa-folder-open"></i>
+                        <span>Select Folder (all PDFs inside will be uploaded)</span>
+                        <div class="small-note">Tip: Select the folder itself, not the files inside.</div>
                     </label>
-                    <input type="file" id="folderInput" name="folder" webkitdirectory directory multiple class="hidden">
-                </form>
-                <!-- Files Upload -->
-                <form id="filesUploadForm" action="{{ url_for('upload_folder') }}" method="post" enctype="multipart/form-data">
-                    <label for="filesInput" class="upload-label">
-                        <i class="fas fa-file-upload"></i>
-                        <span>Upload Files</span>
-                    </label>
-                    <input type="file" id="filesInput" name="files[]" multiple accept=".pdf,.txt" class="hidden">
+                    <input
+                        type="file"
+                        id="folderInput"
+                        name="folder"
+                        webkitdirectory
+                        directory
+                        multiple
+                        accept=".pdf"
+                        class="hidden"
+                    >
+                    <div id="selectedCount" class="small-note"></div>
+                    <button type="submit" class="btn btn-primary" style="margin-top:10px;">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload
+                    </button>
+                    <div id="uploadStatus"></div>
                 </form>
             </div>
         </div>
+
         <!-- Document Processing Panel -->
         <div class="admin-card">
             <h3><i class="fas fa-cogs"></i> Document Processing</h3>
             <div class="button-group">
-                <a href="/ingest" class="btn btn-primary">Process Documents</a>
-                <a href="/view_metadata" class="btn btn-secondary">View Metadata</a>
-                <a href="/view_sitemap" class="btn btn-secondary">View Sitemap</a>
+                <a href="/ingest" class="btn btn-primary"><i class="fas fa-play"></i> Process Documents</a>
+                <a href="/view_metadata" class="btn btn-secondary"><i class="fas fa-database"></i> View Metadata</a>
+                <a href="/view_sitemap" class="btn btn-secondary"><i class="fas fa-sitemap"></i> View Sitemap</a>
             </div>
         </div>
+
         <!-- Graph Management Panel -->
         <div class="admin-card">
             <h3><i class="fas fa-project-diagram"></i> Graph Management</h3>
             <div class="button-group">
-                <a href="/view_graph" class="btn btn-primary">Generate Graph</a>
-                <a href="/view_graph" class="btn btn-secondary">View Graph</a>
+                <a href="/view_graph" class="btn btn-primary"><i class="fas fa-network-wired"></i> Generate Graph</a>
+                <a href="/view_graph" class="btn btn-secondary"><i class="fas fa-eye"></i> View Graph</a>
             </div>
         </div>
+
         <!-- Logout Button -->
         <div class="admin-card">
             <h3><i class="fas fa-sign-out-alt"></i> Logout</h3>
@@ -169,15 +161,64 @@
         </div>
     </div>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Folder Upload Handler
-    document.querySelector('.upload-label[for="folderInput"]').addEventListener('click', function() {
-        document.getElementById('folderInput').click();
+    const folderInput = document.getElementById('folderInput');
+    const folderLabel = document.querySelector('.upload-label[for="folderInput"]');
+    const form = document.getElementById('folderUploadForm');
+    const statusDiv = document.getElementById('uploadStatus');
+    const selectedCount = document.getElementById('selectedCount');
+
+    // Trigger folder picker when label is clicked
+    folderLabel.addEventListener('click', function() {
+        folderInput.click();
     });
-    // Files Upload Handler
-    document.querySelector('.upload-label[for="filesInput"]').addEventListener('click', function() {
-        document.getElementById('filesInput').click();
+
+    // Show selected file count (PDFs only)
+    folderInput.addEventListener('change', function() {
+        const pdfs = Array.from(folderInput.files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+        selectedCount.textContent = pdfs.length
+            ? `Selected ${pdfs.length} PDF${pdfs.length > 1 ? 's' : ''} from folder.`
+            : 'No PDFs detected in the selected folder.';
+        statusDiv.innerHTML = ''; // clear previous status
+    });
+
+    // Submit via fetch to show status neatly
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const files = Array.from(folderInput.files);
+        const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+
+        if (!files.length) {
+            statusDiv.innerHTML = '<div class="alert alert-danger">Please select a folder.</div>';
+            return;
+        }
+        if (!pdfs.length) {
+            statusDiv.innerHTML = '<div class="alert alert-danger">No PDFs found in the selected folder.</div>';
+            return;
+        }
+
+        const formData = new FormData();
+        for (const file of files) {
+            formData.append('folder', file);
+        }
+
+        statusDiv.innerHTML = '<div class="alert alert-info">Uploading...</div>';
+
+        try {
+            const resp = await fetch('/upload_folder', { method: 'POST', body: formData });
+            const result = await resp.json();
+
+            if (resp.ok && result.status === 'success') {
+                statusDiv.innerHTML = `<div class="alert alert-success">Uploaded ${result.files_saved.length} PDFs successfully.</div>`;
+            } else {
+                statusDiv.innerHTML = `<div class="alert alert-danger">${result.message || 'Upload failed.'}</div>`;
+            }
+        } catch (err) {
+            statusDiv.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+        }
     });
 });
 </script>
