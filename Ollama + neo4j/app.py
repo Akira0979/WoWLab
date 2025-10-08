@@ -27,14 +27,14 @@ app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
 
 # Hardcoded paths
-ROOT_FOLDER = r"C:\Users\ANIRUGHO\Desktop\Python\WOW_DEMO_LAB\Ollama + neo4j\KM_folder"
-METADATA_DIR = r"C:\Users\ANIRUGHO\Desktop\Python\WOW_DEMO_LAB\Ollama + neo4j\metadata"
-SITEMAP_DIR = r"C:\Users\ANIRUGHO\Desktop\Python\WOW_DEMO_LAB\Ollama + neo4j\sitemaps"
-UPLOADS_DIR = os.path.join(ROOT_FOLDER, "uploaded")           # for admin folder uploads (multiple files)
-USER_RFP_DIR = os.path.join(ROOT_FOLDER, "user_rfp_uploads")  # for user RFP uploads (single file)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+METADATA_DIR = os.path.join(BASE_DIR, "metadata")
+SITEMAP_DIR = os.path.join(BASE_DIR, "sitemaps")
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")           # for admin uploads
+USER_RFP_DIR = os.path.join(BASE_DIR, "user_rfp_uploads") # for user uploads
 
-os.makedirs(SITEMAP_DIR, exist_ok=True)
 os.makedirs(METADATA_DIR, exist_ok=True)
+os.makedirs(SITEMAP_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(USER_RFP_DIR, exist_ok=True)
 
@@ -224,14 +224,12 @@ def user_panel():
 # -----------------------------
 @app.route("/ingest", methods=["GET"])
 def ingest():
-    # Build sitemap
-    sitemap = build_sitemap(ROOT_FOLDER)
+    sitemap = build_sitemap(UPLOADS_DIR)
     sitemap_path = os.path.join(SITEMAP_DIR, "sitemap.json")
     with open(sitemap_path, "w", encoding="utf-8") as f:
         json.dump(sitemap, f, indent=2, ensure_ascii=False)
 
-    # Async processing
-    results = asyncio.run(process_all_pdfs(sitemap, ROOT_FOLDER))
+    results = asyncio.run(process_all_pdfs(sitemap, UPLOADS_DIR))
     metadata_path = os.path.join(METADATA_DIR, "metadata.json")
     with open(metadata_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
@@ -329,8 +327,9 @@ def view_graph():
 @app.route("/upload_folder", methods=["POST"])
 def upload_folder():
     """
-    Handles multiple file uploads from the admin panel.
-    Note: webkitdirectory sends individual files; we save each into UPLOADS_DIR.
+    Handles folder uploads from the admin panel.
+    The <input type="file" webkitdirectory> sends all files inside the folder.
+    We save only PDFs into UPLOADS_DIR, preserving subfolder structure.
     """
     files = request.files.getlist("folder")
     if not files:
@@ -338,12 +337,16 @@ def upload_folder():
 
     saved = []
     for f in files:
+        if not f.filename.lower().endswith(".pdf"):
+            continue  # skip non-PDFs
         filename = secure_filename(f.filename)
-        # Preserve relative subpaths if provided by browser (some include directories)
         dest_path = os.path.join(UPLOADS_DIR, filename)
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         f.save(dest_path)
         saved.append(dest_path)
+
+    if not saved:
+        return jsonify({"status": "no_pdfs"}), 400
 
     return jsonify({"status": "success", "files_saved": saved})
 
@@ -354,28 +357,47 @@ def upload_folder():
 def upload_rfp():
     """
     Handles user RFP upload (single PDF).
+    Processes it through the same metadata pipeline as admin docs.
     """
     file = request.files.get("rfp_file")
     if file is None or file.filename == "":
         return jsonify({"status": "no_file"}), 400
+
     filename = secure_filename(file.filename)
     if not filename.lower().endswith(".pdf"):
         return jsonify({"status": "invalid_type", "message": "Only PDF allowed"}), 400
+
     dest_path = os.path.join(USER_RFP_DIR, filename)
     file.save(dest_path)
 
-    # Track current doc in session
-    doc_meta = {
+    # Build a sitemap-like entry for this single file
+    entry = {
         "filename": filename,
-        "path": dest_path,
-        "id": file_hash(dest_path)[:12]
+        "relative_path": filename,
+        "extension": ".pdf",
+        "domain": "User",
+        "region": "Unknown",
+        "client": "Unknown"
     }
-    session["current_doc"] = doc_meta
+
+    # Process PDF (extract text, metadata, enrichment)
+    result = asyncio.run(process_pdf(entry, USER_RFP_DIR))
+
+    # Save metadata JSON for this user doc (optional)
+    user_meta_path = os.path.join(METADATA_DIR, f"user_{result['id']}.json")
+    with open(user_meta_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    # Push into Neo4j graph
+    handler.create_document_graph(result)
+
+    # Track enriched doc in session
+    session["current_doc"] = result
     session["chat_history"] = []  # reset chat history for new upload
 
-    return jsonify({"status": "success", "saved_to": dest_path})
-
+    return jsonify({"status": "success", "saved_to": dest_path, "doc_id": result["id"]})
 @app.route("/chatbot", methods=["POST"])
+
 def chatbot():
     data = request.get_json(force=True)
     user_msg = (data.get("message") or "").strip()
@@ -391,6 +413,18 @@ def chatbot():
     current_doc = session.get("current_doc")
     if current_doc:
         context += f"User uploaded doc: {current_doc['filename']} (id {current_doc['id']})\n"
+        context += f"Summary: {current_doc.get('overview_summary','')}\n"
+        industries = current_doc.get("industry_tags", {}).get("industries", [])
+        if industries:
+            context += f"Industries: {', '.join(industries)}\n"
+        entities = current_doc.get("entities", {})
+        if entities:
+            context += "Entities:\n"
+            for k,v in entities.items():
+                if v:
+                    context += f"  {k}: {', '.join(v)}\n"
+
+    # Pull related docs from Neo4j
 
         # Pull related docs from Neo4j
         try:
